@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instacart Order Prediction</title>
+    <style>
+        .product-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+
+        .product-item {
+            width: 200px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .product-item img {
+            width: 100px;
+            height: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Get Order Prediction for User</h1>
+
+    <!-- Form to input user ID -->
+    <form id="prediction-form">
+        <label for="user_id">Enter User ID:</label>
+        <input type="text" id="user_id" name="user_id" required>
+        <button type="submit">See Products Ordered</button>
+    </form>
+
+    <h2>Ordered Products</h2>
+    <div id="prediction-results"></div>
+
+    <!-- Button for recommending products -->
+    <button id="recommend-products" style="display:none;">Recommended Products</button>
+
+    <!-- Button for predicting the next order -->
+    <button id="predict-next-order" style="display:none;">Predict Next Order</button>
+
+    <div id="recommended-products" style="display:none;"></div>
+
+    <script>
+        document.getElementById('prediction-form').addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const userId = document.getElementById('user_id').value;
+            const resultDiv = document.getElementById('prediction-results');
+            const recommendProductsButton = document.getElementById('recommend-products');
+            const predictNextOrderButton = document.getElementById('predict-next-order');
+            const recommendedProductsDiv = document.getElementById('recommended-products');
+
+            // Clear previous results
+            resultDiv.innerHTML = "Loading...";
+
+            // Hide the other sections initially
+            recommendedProductsDiv.style.display = 'none';
+            predictNextOrderButton.style.display = 'none';
+
+            // Fetch products ordered by the user
+            fetch('/get_order_prediction', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ 'user_id': userId })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);  // Debugging step: Log the response
+
+                    if (data.error) {
+                        resultDiv.innerHTML = `<p>Error: ${data.error}</p>`;
+                    } else if (data.message) {
+                        resultDiv.innerHTML = `<p>${data.message}</p>`;
+                    } else {
+                        let resultHTML = '<h3>Products Already Ordered</h3><div class="product-list">';
+                        if (Array.isArray(data)) {
+                            data.forEach(item => {
+                                resultHTML += `<div class="product-item">
+                                    <strong>${item.product_name}</strong><br>
+                                    <img src="${item.image_url}" alt="${item.product_name}">
+                                </div>`;
+                            });
+                        } else {
+                            resultHTML += '<p>No products ordered.</p>';
+                        }
+                        resultHTML += '</div>';
+                        resultDiv.innerHTML = resultHTML;
+
+                        // Show the "Recommend Products" button after displaying ordered products
+                        recommendProductsButton.style.display = 'inline-block';
+                    }
+                })
+                .catch(error => {
+                    resultDiv.innerHTML = `<p>Error fetching data: ${error}</p>`;
+                });
+        });
+
+        // Recommend products when the button is clicked
+        document.getElementById('recommend-products').addEventListener('click', function () {
+            const userId = document.getElementById('user_id').value;
+            const recommendedProductsDiv = document.getElementById('recommended-products');
+
+            recommendedProductsDiv.innerHTML = "Loading recommended products...";
+
+            // Fetch recommended products for the user
+            fetch(`/recommend_products/${userId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        recommendedProductsDiv.innerHTML = `<p>Error: ${data.error}</p>`;
+                    } else if (data.message) {
+                        recommendedProductsDiv.innerHTML = `<p>${data.message}</p>`;
+                    } else {
+                        let resultHTML = '<h3>Recommended Products</h3><div class="product-list">';
+                        data.forEach(item => {
+                            resultHTML += `<div class="product-item">
+                                <strong>${item.product_name}</strong><br>
+                                <img src="${item.image_url}" alt="${item.product_name}">
+                            </div>`;
+                        });
+                        resultHTML += '</div>';
+                        recommendedProductsDiv.innerHTML = resultHTML;
+
+                        // Show the "Predict Next Order" button after displaying recommended products
+                        document.getElementById('predict-next-order').style.display = 'inline-block';
+                    }
+                })
+                .catch(error => {
+                    recommendedProductsDiv.innerHTML = `<p>Error fetching recommendations: ${error}</p>`;
+                });
+
+            recommendedProductsDiv.style.display = 'block';
+        });
+
+        // Predict the next order when the button is clicked
+        document.getElementById('predict-next-order').addEventListener('click', function () {
+            const userId = document.getElementById('user_id').value;
+            const resultDiv = document.getElementById('prediction-results');
+
+            resultDiv.innerHTML = "Loading next order prediction...";
+
+            // Fetch next order prediction for the user
+            fetch(`/predict_next_order/${userId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        resultDiv.innerHTML = `<p>Error: ${data.error}</p>`;
+                    } else if (data.message) {
+                        resultDiv.innerHTML = `<p>${data.message}</p>`;
+                    } else {
+                        let resultHTML = '<h3>Predicted Next Order</h3><div class="product-list">';
+                        data.forEach(item => {
+                            resultHTML += `<div class="product-item">
+                                <strong>${item.product_name}</strong><br>
+                                <img src="${item.image_url}" alt="${item.product_name}">
+                            </div>`;
+                        });
+                        resultHTML += '</div>';
+                        resultDiv.innerHTML += resultHTML;
+                    }
+                })
+                .catch(error => {
+                    resultDiv.innerHTML = `<p>Error fetching prediction: ${error}</p>`;
+                });
+        });
+    </script>
+</body>
+
+</html>
