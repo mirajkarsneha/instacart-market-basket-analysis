@@ -2,114 +2,96 @@ import os
 from flask import Flask, render_template, request, jsonify
 from google.cloud import bigquery
 import requests
-import pandas as pd
 import urllib.parse
+from sqlalchemy import create_engine
+from collections import defaultdict
 
-# Google API credentials and settings
-api_key = "AIzaSyD4BCfPJwAnKQ5cd-Ip_0m7QXtva9JvDIM"  # Replace with your new API key
-cx = "31d9e2af7c81642fb"  # Replace with your CSE ID
+# Use environment variables for sensitive data
+#api_key = os.getenv("AIzaSyB5ePyLzzs6TKU1a_ffV0E4EhkKK2uoaLs")  # Set the environment variable in your system
+#cx = os.getenv("31d9e2af7c81642fb")  # Set the environment variable in your system
+api_key = os.getenv("GOOGLE_API_KEY")
+cx = os.getenv("GOOGLE_CX")
 
+# Initialize Flask app
 app = Flask(__name__)
+
+# Google Cloud and BigQuery setup
 project_id = 'instacart-441209'
 client = bigquery.Client(project=project_id)
 
+# BigQuery engine setup for SQLAlchemy
+DATABASE_URI = f'bigquery://{project_id}'
+engine = create_engine(DATABASE_URI)
+
+
+# Cache to avoid repeated API calls
+image_url_cache = {}
+
 def get_image_url(product_name):
-    # Google Custom Search API URL for image search
-    encoded_query = urllib.parse.quote(product_name)
-    url = f"https://www.googleapis.com/customsearch/v1?q={encoded_query}&cx={cx}&searchType=image&key={api_key}"
-    response = requests.get(url)
+    if product_name in image_url_cache:
+        return image_url_cache[product_name]
     
-    # Check response and extract image URL
-    if response.status_code == 200:
-        image_data = response.json()
-        if 'items' in image_data and len(image_data['items']) > 0:
-            return image_data['items'][0]['link']
-    return None  # Return None if no image found
+    query = f"{product_name} Instacart grocery"
+    url = f"https://www.googleapis.com/customsearch/v1?q={urllib.parse.quote(query)}&cx={cx}&searchType=image&key={api_key}"
+    
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
+        image_url = data['items'][0]['link'] if 'items' in data else "https://via.placeholder.com/100"
+        image_url_cache[product_name] = image_url
+        return image_url
+    except Exception as e:
+        print(f"Error fetching image for {product_name}: {e}")
+        return "https://via.placeholder.com/100"
+
+def get_ordered_and_carted_products(user_id):
+    combined_query = f"""
+    WITH CombinedOrderProducts AS (
+        SELECT order_id, product_id
+        FROM `instacart-441209.instacart.order_products_prior`
+        UNION ALL
+        SELECT order_id, product_id
+        FROM `instacart-441209.instacart.order_products_train`
+    )
+    SELECT 
+        o.user_id,
+        o.order_id,
+        p.product_name
+    FROM CombinedOrderProducts op
+    JOIN `instacart-441209.instacart.products` p ON op.product_id = p.product_id
+    JOIN `instacart-441209.instacart.orders` o ON op.order_id = o.order_id
+    WHERE o.user_id = {user_id}
+    ORDER BY o.order_id, p.product_name;
+    """
+    query_job = client.query(combined_query)
+    result_df = query_job.to_dataframe()
+
+    if result_df.empty:
+        return None
+    
+    grouped_df = result_df.groupby('order_id')['product_name'].apply(list).reset_index()
+    grouped_df['image_urls'] = grouped_df['product_name'].apply(lambda products: [get_image_url(product) for product in products])
+    return grouped_df
+
+@app.route('/get-products', methods=['POST'])
+def get_order_prediction():
+    user_id = request.form.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'User ID is required'}), 400
+    
+    grouped_df = get_ordered_and_carted_products(user_id)
+    if grouped_df is None:
+        return jsonify({'error': 'No data found for the user'}), 404
+
+    grouped_df = grouped_df.head(3)
+    grouped_products = grouped_df.to_dict(orient='records')
+    return jsonify({'grouped_products': grouped_products})
 
 @app.route('/')
-def home():
+def index():
     return render_template('index.html')
 
-@app.route('/get_order_prediction', methods=['POST'])
-def get_order_prediction():
-    try:
-        user_id = request.form.get('user_id')
-        
-        # BigQuery to fetch reordered products for a specific user
-        query = f"""
-            SELECT 
-                p.product_name,
-                COUNT(*) AS order_count,
-                SUM(CASE WHEN op.reordered = 1 THEN 1 ELSE 0 END) AS reorder_count
-            FROM `instacart-441209.instacart.order_products_prior` op
-            JOIN `instacart-441209.instacart.products` p ON op.product_id = p.product_id
-            JOIN `instacart-441209.instacart.orders` o ON op.order_id = o.order_id
-            WHERE o.user_id = {user_id}
-            GROUP BY p.product_name
-            ORDER BY reorder_count DESC
-            LIMIT 10
-        """
-        
-        # Execute query and convert to DataFrame
-        result = client.query(query)
-        df = result.to_dataframe()
-        
-        # Append image URLs for each product
-        predictions = []
-        for _, row in df.iterrows():
-            product_name = row['product_name']
-            image_url = get_image_url(product_name)
-            predictions.append({
-                "product_name": product_name,
-                "order_count": row['order_count'],
-                "reorder_count": row['reorder_count'],
-                "image_url": image_url or ""  # Default to empty string if no image found
-            })
-
-        # Return JSON response
-        return jsonify(predictions if predictions else {"message": "No data found for the given user_id."})
-    
-    except Exception as e:
-        return jsonify({"error": str(e)})
-
-@app.route('/predict_next_order/<user_id>', methods=['GET'])
-def predict_next_order(user_id):
-    try:
-        # Replace this logic with your actual model prediction code
-        query = f"""
-            SELECT product_name
-            FROM `instacart-441209.instacart.products`
-            WHERE product_id IN (
-                SELECT product_id
-                FROM `instacart-441209.instacart.order_products_prior`
-                WHERE order_id IN (
-                    SELECT order_id
-                    FROM `instacart-441209.instacart.orders`
-                    WHERE user_id = {user_id}
-                )
-                ORDER BY RAND()
-                LIMIT 5
-            )
-        """
-        
-        # Execute query and convert to DataFrame
-        result = client.query(query)
-        df = result.to_dataframe()
-
-        # Append image URLs for each predicted product
-        predictions = []
-        for _, row in df.iterrows():
-            product_name = row['product_name']
-            image_url = get_image_url(product_name)
-            predictions.append({
-                "product_name": product_name,
-                "image_url": image_url or ""  # Default to empty string if no image found
-            })
-        
-        return jsonify(predictions if predictions else {"message": "No prediction available."})
-    
-    except Exception as e:
-        return jsonify({"error": str(e)})
-
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=5001)
+
