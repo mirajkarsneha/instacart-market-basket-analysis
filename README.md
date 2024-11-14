@@ -1,4 +1,5 @@
 # 🛒 🥕 Instacart Market Analysis
+<img width="1438" alt="Screenshot 2024-11-14 at 17 56 48" src="https://github.com/user-attachments/assets/1f3d23a5-aec8-4c2a-9379-0df2b73c2fc6">
 
 ## 🍏 Introduction
 Instacart is an American technology company that operates as a same-day grocery delivery and pick up service in the U.S. and Canada. Customers shop for groceries through the Instacart mobile app or Instacart.com from various retailer partners. The order is shopped and delivered by an Instacart personal shopper.
@@ -17,18 +18,17 @@ The project aims to analyze grocery order data from Instacart, to investigate cu
 ## 🧀  Data Preparation
 
 ## 🍊 Project Structure
-This python based machine learning project has below mentioned files.
+This python based machine learning which has project has below mentioned files.
 - bigquery - This has all the queries written in bigQuery for all the KPIs
 - Website - Created a demo webside using Flask
-- churn_rate_analysis.ipnyb - 
-- customer_next_order_analysis.ipynb -
-- EDA.ipynb -
-- README.md - 
-- Tableau Dashboard.twb - Dashboard which has all the visualizations
-
+- churn_rate_analysis.ipnyb - Calculation of Last 30 Day Churn Rate and Next 30 Day Churn Rate Prediction using ML
+- customer_next_order_analysis.ipynb - Top Product Pairs by Purchase Frequency, Recommended Products per User and Next Order Prediction using ML
+- EDA.ipynb - Complete data analysis related to the KPIS
+- README.md
+- 
 ## 🍄 EDA Analysis
 - General Analysis.
-- Analyzing Behavour of cutomers
+- Analyzing Behavour of customers
 - Analyzing products
 - Analyzing daily customer orders
 - Reordered ratio for Prior and Train
@@ -40,12 +40,15 @@ This python based machine learning project has below mentioned files.
 5. Recommended Products per User
 6. Next Order Prediction
 
-![Instacart Dashboard](https://github.com/user-attachments/assets/abc67009-b485-4085-b672-97b6b8daa3e2)
+![Instacart Dashboard](https://github.com/user-attachments/assets/cf5eb2d6-f44e-4da6-a29e-1d738340b567)
+
+https://github.com/user-attachments/assets/568f1a0f-b032-42dc-b41c-b75183169372
 
 ## 🍗 Conclusion
 - The disengagement rate of 73.27% highlights the need for targeted retention strategies to re-engage at-risk users.  The model has 72% accuracy in predicting churn rate, performing better at identifying non-churn customers, with room for improvement in predicting churned users.
 - A correlation have been found between the top 10 products and top pair products, suggesting opportunities for cross-selling and bundling.  
 Recommended products per user successfully identify top pair products, enabling personalized recommendations. The model achieves 0.68% accuracy in predicting the next order, with room for improvement in forecasting both "Next Order" and "No Upcoming Order".
+
 
 ## 🍓 Contributors
 <table align="center">
