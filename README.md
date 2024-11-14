@@ -42,10 +42,13 @@ This python based machine learning which has project has below mentioned files.
 
 ![Instacart Dashboard](https://github.com/user-attachments/assets/cf5eb2d6-f44e-4da6-a29e-1d738340b567)
 
+https://github.com/user-attachments/assets/568f1a0f-b032-42dc-b41c-b75183169372
+
 ## 🍗 Conclusion
 - The disengagement rate of 73.27% highlights the need for targeted retention strategies to re-engage at-risk users.  The model has 72% accuracy in predicting churn rate, performing better at identifying non-churn customers, with room for improvement in predicting churned users.
 - A correlation have been found between the top 10 products and top pair products, suggesting opportunities for cross-selling and bundling.  
 Recommended products per user successfully identify top pair products, enabling personalized recommendations. The model achieves 0.68% accuracy in predicting the next order, with room for improvement in forecasting both "Next Order" and "No Upcoming Order".
+
 
 ## 🍓 Contributors
 <table align="center">
