@@ -25,22 +25,30 @@ engine = create_engine(DATABASE_URI)
 image_url_cache = {}
 
 def get_image_url(product_name):
+    # Check if the image URL is already in the cache
     if product_name in image_url_cache:
         return image_url_cache[product_name]
     
-    query = f"{product_name} Instacart grocery"
+    # Format the query for better search results
+    query = f"{product_name} grocery item Instacart"
     url = f"https://www.googleapis.com/customsearch/v1?q={urllib.parse.quote(query)}&cx={cx}&searchType=image&key={api_key}"
     
     try:
         response = requests.get(url)
         response.raise_for_status()
         data = response.json()
-        image_url = data['items'][0]['link'] if 'items' in data else "https://via.placeholder.com/100"
+
+        # Check if items are returned in the response
+        image_url = data['items'][0]['link'] if 'items' in data and len(data['items']) > 0 else "https://via.placeholder.com/100"
+        
+        # Cache the image URL
         image_url_cache[product_name] = image_url
         return image_url
     except Exception as e:
         print(f"Error fetching image for {product_name}: {e}")
+        # Use placeholder image on error
         return "https://via.placeholder.com/100"
+        
 
 def get_ordered_and_carted_products(user_id):
     combined_query = f"""
@@ -155,28 +163,53 @@ def get_order_prediction():
 def predict_next_order(user_id, top_n=10):
     user_order_freq_df = get_user_order_frequencies(user_id)
     next_order_prediction = user_order_freq_df[user_order_freq_df['reorder_count'] > 0]
+    
+    if next_order_prediction.empty:
+        return pd.DataFrame()  # Return empty DataFrame if no predictions available
+    
     next_order_prediction = next_order_prediction.head(top_n)
     return next_order_prediction[['product_name', 'order_count', 'reorder_count']]
 
-@app.route('/predict-next-order', methods=['POST'])
+def get_user_order_frequencies(user_id):
+    query = f"""
+    SELECT 
+        p.product_name,
+        COUNT(*) AS order_count,
+        SUM(CASE WHEN reordered = 1 THEN 1 ELSE 0 END) AS reorder_count
+    FROM `instacart-441209.instacart.order_products_prior` op
+    JOIN `instacart-441209.instacart.products` p ON op.product_id = p.product_id
+    JOIN `instacart-441209.instacart.orders` o ON op.order_id = o.order_id
+    WHERE o.user_id = {user_id}
+    GROUP BY p.product_name
+    ORDER BY order_count DESC;
+    """
+    query_job = client.query(query)
+    user_order_freq_df = query_job.to_dataframe()
+    return user_order_freq_df
+
+
+@app.route('/predict-next-order', methods=['GET'])
 def predict_next_order_route():
-    user_id = request.form.get('user_id')
+    user_id = request.args.get('user_id')  # Get user_id from query parameters
     if not user_id:
         return jsonify({'error': 'User ID is required'}), 400
     
-    predicted_next_order = predict_next_order(int(user_id))
+    predicted_next_order = predict_next_order(user_id)
     if predicted_next_order.empty:
         return jsonify({'error': 'No data found for the user'}), 404
 
     predicted_products = predicted_next_order.to_dict(orient='records')
-    
-    # Get images for predicted products
+    print(predicted_products)  # Log to see the data being returned
+
     predicted_products_images = [get_image_url(product['product_name']) for product in predicted_products]
 
     return jsonify({
         'predicted_next_order': predicted_products,
         'predicted_next_order_images': predicted_products_images
     })
+
+
+
 
 @app.route('/')
 def index():

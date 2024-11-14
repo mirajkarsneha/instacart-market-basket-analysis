@@ -144,6 +144,19 @@
             font-size: 14px;
             color: #28a745;
         }
+
+        .predicted-order-list {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+
+        .predicted-order-item {
+            margin: 5px 0;
+            font-size: 16px;
+        }
     </style>
 </head>
 <body>
@@ -166,9 +179,13 @@
         <h2 id="recommendedProductsTitle" style="display:none;">Recommended Products</h2>
         <div id="recommendedProducts" class="recommended-products-section"></div>
 
-        <!-- New Predict Next Order button -->
         <div id="predictNextOrderDiv" style="display: none; text-align: center; margin-top: 20px;">
             <button id="predictNextOrderBtn">Predict Next Order</button>
+        </div>
+
+        <div id="predictedOrderDiv" class="order-item" style="display: none;">
+            <h3>Predicted Next Order:</h3>
+            <div id="predictedOrderItems" class="product-row"></div>
         </div>
     </div>
 
@@ -178,11 +195,17 @@
 
             let userId = document.getElementById('user_id').value;
 
+            if (!userId || userId <= 0) {
+                document.getElementById('error').innerHTML = "Please enter a valid User ID.";
+                document.getElementById('error').style.display = 'block';
+                return;
+            }
+
             document.getElementById('loading').style.display = 'block';
             document.getElementById('error').style.display = 'none';
             document.getElementById('orderList').innerHTML = '';
             document.getElementById('recommendedProducts').innerHTML = '';
-            document.getElementById('recommendedProductsTitle').style.display = 'none'; // Hide Recommended Products initially
+            document.getElementById('recommendedProductsTitle').style.display = 'none';
 
             fetch('/get-products', {
                 method: 'POST',
@@ -206,35 +229,28 @@
                 let recommendedProductsTitle = document.getElementById('recommendedProductsTitle');
                 let predictNextOrderDiv = document.getElementById('predictNextOrderDiv');
 
-                // Display user's ordered products
                 data.grouped_products.forEach(order => {
                     let orderItem = document.createElement('div');
                     orderItem.className = 'order-item';
-                    orderItem.innerHTML = `
-
+                    orderItem.innerHTML = ` 
                         <h3>Order ID: ${order.order_id}</h3>
                         <div class="product-row">
-                            ${order.product_name.map((name, index) => `
-
+                            ${order.product_name.map((name, index) => ` 
                                 <div class="product-item">
                                     <div class="product-image"><img src="${order.image_urls[index]}" alt="${name}"></div>
                                     <div class="product-name">${name}</div>
                                 </div>
                             `).join('')}
-
                         </div>
                     `;
                     orderList.appendChild(orderItem);
                 });
 
-                // Display recommended products only after order information is loaded
                 recommendedProductsTitle.style.display = 'block';
                 data.recommended_products.forEach((product, index) => {
                     let recommendedProductItem = document.createElement('div');
                     recommendedProductItem.className = 'recommended-product-item';
-
                     recommendedProductItem.innerHTML = `
-
                         <div class="recommended-product-image">
                             <img src="${data.recommended_products_images[index]}" alt="${product}">
                         </div>
@@ -242,11 +258,9 @@
                             <div class="recommended-product-name">${product}</div>
                         </div>
                     `;
-
                     recommendedProducts.appendChild(recommendedProductItem);
                 });
 
-                // Show Predict Next Order button
                 predictNextOrderDiv.style.display = 'block';
             })
             .catch(error => {
@@ -256,38 +270,43 @@
             });
         });
 
-        // Event listener for the "Predict Next Order" button
         document.getElementById('predictNextOrderBtn').addEventListener('click', function() {
-            let userId = document.getElementById('user_id').value;
+        let userId = document.getElementById('user_id').value;
 
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('error').style.display = 'none';
+        fetch(`/predict-next-order?user_id=${userId}`)
+        .then(response => response.json())
+        .then(data => {                
+            let predictedOrderDiv = document.getElementById('predictedOrderDiv');
+            let predictedOrderItems = document.getElementById('predictedOrderItems');
+            predictedOrderItems.innerHTML = '';  // Clear previous items
 
-            fetch('/predict-next-order', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: `user_id=${userId}`
-            })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('loading').style.display = 'none';
+            data.predicted_next_order.forEach((product, index) => {
+                let productName = product.product_name;
+                let productImageUrl = data.predicted_next_order_images[index];                    
 
-                if (data.error) {
-                    document.getElementById('error').innerHTML = data.error;
-                    document.getElementById('error').style.display = 'block';
-                    return;
-                }
-
-                alert('Predicted Next Order: ' + data.prediction);
-            })
-            .catch(error => {
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('error').innerHTML = "Error predicting next order.";
-                document.getElementById('error').style.display = 'block';
+                // Create order item div to match structure
+                let orderItem = document.createElement('div');
+                orderItem.className = 'order-item';  // Make sure to use 'order-item' class
+                orderItem.innerHTML = ` 
+                    <div class="product-row">  <!-- Use the same product-row class -->
+                        <div class="product-item">
+                            <div class="product-image">
+                                <img src="${productImageUrl}" alt="${productName}">
+                            </div>
+                            <div class="product-name">${productName}</div>
+                        </div>
+                    </div>
+                `;
+                predictedOrderItems.appendChild(orderItem);
             });
+
+            predictedOrderDiv.style.display = 'block';  // Make predicted order div visible
+        })
+        .catch(error => {
+            document.getElementById('error').innerHTML = "Error predicting next order.";
+            document.getElementById('error').style.display = 'block';
         });
+    });
     </script>
 </body>
 </html>
