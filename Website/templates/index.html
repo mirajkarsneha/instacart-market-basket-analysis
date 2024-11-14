@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -8,12 +8,14 @@
         /* Styles */
         body {
             font-family: Arial, sans-serif;
-            background-image: url('https://images.unsplash.com/photo-1611586225152-5c0354c5b173'); /* Use a working image URL */
+            background-image: url('/static/images/insta3.png'); /* Ensure path is correct */
             background-size: cover;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
             background-position: center;
             margin: 0;
             padding: 20px;
-            color: white; /* Set text color to white for better contrast with the background */
+            color: white; /* Set text color to white for better contrast */
         }
         h1, h2 {
             text-align: center;
@@ -25,6 +27,35 @@
             background-color: rgba(255, 255, 255, 0.8); /* Soft white background with opacity for better contrast */
             padding: 30px;
             border-radius: 10px;
+        }
+        /* Centered input form */
+        #userForm {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        #user_id {
+            padding: 10px;
+            font-size: 16px;
+            width: 80%; /* Adjust width as desired */
+            max-width: 300px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            color: white;
+            background-color: #28a745; /* Green button color */
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #218838; /* Darker green on hover */
         }
         .order-list, .recommended-products-section {
             margin-top: 20px;
@@ -78,8 +109,8 @@
         }
         /* Other existing styles */
         .order-item h3 {
-         color: black; /* Set Order ID text color to black */
-    }
+            color: black; /* Set Order ID text color to black */
+        }
     </style>
 </head>
 <body>
@@ -98,7 +129,7 @@
         <div id="recommendedProducts" class="recommended-products-section product-row-single-line"></div>
 
         <div id="predictNextOrderDiv" style="display: none; text-align: center; margin-top: 20px;">
-            <button id="predictNextOrderBtn">Predict My Next Order</button>
+            <button id="predictNextOrderBtn">Predict Next Order</button>
         </div>
 
         <div id="predictedOrderDiv" class="order-item" style="display: none;">
@@ -216,13 +247,8 @@
                 });
 
                 document.getElementById('predictedOrderDiv').style.display = 'block';
-            })
-            .catch(error => {
-                document.getElementById('error').innerHTML = "Error predicting next order.";
-                document.getElementById('error').style.display = 'block';
             });
         });
-
     </script>
 </body>
 </html>
