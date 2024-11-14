@@ -26,14 +26,14 @@ This python based machine learning project has below mentioned files.
 - README.md - 
 - Tableau Dashboard.twb - Dashboard which has all the visualizations
 
-## EDA Analysis
+## 🍄 EDA Analysis
 - General Analysis.
 - Analyzing Behavour of cutomers
 - Analyzing products
 - Analyzing daily customer orders
 - Reordered ratio for Prior and Train
 
-## KPIs
+## 🥑 KPIs
 1. Last 30 Day Churn Rate
 3. Next 30 Day Churn Rate Prediction
 4. Top Product Pairs by Purchase Frequency
@@ -42,12 +42,12 @@ This python based machine learning project has below mentioned files.
 
 ![Instacart Dashboard](https://github.com/user-attachments/assets/abc67009-b485-4085-b672-97b6b8daa3e2)
 
-## Conclusion
+## 🍗 Conclusion
 - The disengagement rate of 73.27% highlights the need for targeted retention strategies to re-engage at-risk users.  The model has 72% accuracy in predicting churn rate, performing better at identifying non-churn customers, with room for improvement in predicting churned users.
 - A correlation have been found between the top 10 products and top pair products, suggesting opportunities for cross-selling and bundling.  
 Recommended products per user successfully identify top pair products, enabling personalized recommendations. The model achieves 0.68% accuracy in predicting the next order, with room for improvement in forecasting both "Next Order" and "No Upcoming Order".
 
-## Contributors
+## 🍓 Contributors
 <table align="center">
   <tr>
     <td align="center">
